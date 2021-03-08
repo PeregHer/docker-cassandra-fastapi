@@ -1,0 +1,44 @@
+version: "2.2"
+networks: 
+  cassandra:
+
+services:
+ fastapi:
+  image: fastapi-resto
+  container_name: fastapi
+  build: 
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  ports: 
+    - "80:80"
+  networks: 
+    - cassandra
+
+ cassandra-01:
+  container_name: cassandra-01
+  image: cassandra
+  ports: 
+    - "9042:9042"
+  environment:
+  - CASSANDRA_CLUSTER_NAME=Restaurants
+  volumes:
+  - ./data/cass1:/var/lib/cassandra
+  networks: 
+  - cassandra
+
+ cassandra-02:
+  container_name: cassandra-02
+  image: cassandra
+  ports: 
+    - "9043:9042"
+  command: /bin/bash -c "sleep 30 && echo ' -- Pausing to let system catch up ... -->' && /docker-entrypoint.sh cassandra -f"
+  links:
+  - cassandra-01:seed
+  environment: 
+  - CASSANDRA_SEEDS=seed
+  - CASSANDRA_CLUSTER_NAME=Restaurants
+  volumes:
+  - ./data/cass2:/var/lib/cassandra
+  networks: 
+  - cassandra
